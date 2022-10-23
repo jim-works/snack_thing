@@ -1,0 +1,9 @@
+<launch>
+
+  <!-- Start navigation -->
+  <include file="$(find fetch_gazebo_demo)/launch/freight_nav.launch" />
+
+  <!-- Start our code -->
+  <node name="snack_controller" pkg="snack_thing" type="snack_controller.py" output="screen" />
+
+</launch>
