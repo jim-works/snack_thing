@@ -50,7 +50,6 @@
   <!--   <doc_depend>doxygen</doc_depend> -->
   <buildtool_depend>catkin</buildtool_depend>
   <depend>rospy</depend>
-  <build_export_depend>rospy</build_export_depend>
 
   <exec_depend>actionlib</exec_depend>
   <exec_depend>fetch_gazebo</exec_depend>
