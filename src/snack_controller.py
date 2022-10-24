@@ -69,13 +69,13 @@ if __name__ == "__main__":
     global_move_base = move_base
     # Move the base to be in front of the table
     # Demonstrates the use of the navigation stack
-    rospy.loginfo("Moving to table...")
+    rospy.loginfo("Moving to snack dispenser...")
     rospy.Subscriber('odom',Odometry,move_base.distanceCalc)
-    move_base.goto(2.250, 3.118, 0.0)
+    move_base.goto(4.03, -3, 0.0)
 
     # Move to second table
-    rospy.loginfo("Moving to second table...")
-    move_base.goto(-3.53, 3.75, 1.57)
+    rospy.loginfo("Moving to table...")
+    move_base.goto(-3.53, 3.75, 0.0)
    
 
     rospy.loginfo("comp..")
