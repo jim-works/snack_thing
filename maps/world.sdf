@@ -22,8 +22,18 @@
     </include>
     <include>
       <uri>model://fetchit_table</uri>
-      <name>snack</name>
-      <pose>3.05 3 1 0 0 1.57</pose>
+      <name>pretzels</name>
+      <pose>3.05 -4 1 0 0 1.57</pose>
+    </include>
+    <include>
+      <uri>model://fetchit_table</uri>
+      <name>gold_fish</name>
+      <pose>3.05 0 1 0 0 1.57</pose>
+    </include>
+    <include>
+      <uri>model://fetchit_table</uri>
+      <name>cheese_its</name>
+      <pose>3.05 4 1 0 0 1.57</pose>
     </include>
     <include>
       <uri>model://demo_cube</uri>
