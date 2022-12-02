@@ -1,6 +1,7 @@
 <launch>
 
   <!-- Start navigation -->
+  <param name="/use_sim_time" value="true" />
   <include file="$(find fetch_gazebo_demo)/launch/freight_nav.launch" />
 
   <!-- Start our code -->

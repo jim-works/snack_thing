@@ -14,7 +14,7 @@ from moveit_python.geometry import rotate_pose_msg_by_euler_angles
 from control_msgs.msg import FollowJointTrajectoryAction, FollowJointTrajectoryGoal
 from control_msgs.msg import PointHeadAction, PointHeadGoal
 from grasping_msgs.msg import FindGraspableObjectsAction, FindGraspableObjectsGoal
-from geometry_msgs.msg import PoseStamped
+from geometry_msgs.msg import PoseWithCovarianceStamped
 from move_base_msgs.msg import MoveBaseAction, MoveBaseGoal
 from moveit_msgs.msg import PlaceLocation, MoveItErrorCodes
 from trajectory_msgs.msg import JointTrajectory, JointTrajectoryPoint
@@ -32,17 +32,19 @@ class SnackBowl(object):
     def add_snack(self, volume):
         rospy.loginfo(f"Added {volume} snack volume!")
         self.current_volume += volume
-        if self.current_volume > self.max_volume: #overflow!
+        if self.current_volume > self.max_volume:  # overflow!
             self.wasted += self.current_volume - self.max_volume
             self.current_volume = self.max_volume
             rospy.loginfo(f"We have now wasted {self.wasted} snack volume :(")
+
     def full(self):
         return self.max_volume <= self.current_volume
 
+
 class SnackDispenser:
-    #creates a snack dispenser that drops into snack_bowl, that drops rate units/sec of snacks into it
-    #there is a period of delay seconds where the snack is in the air: it will only increase the number of snacks in the bowl after delay seconds.
-    #only allows dispencing if snack_bowl is within radius units from (x,y)
+    # creates a snack dispenser that drops into snack_bowl, that drops rate units/sec of snacks into it
+    # there is a period of delay seconds where the snack is in the air: it will only increase the number of snacks in the bowl after delay seconds.
+    # only allows dispencing if snack_bowl is within radius units from (x,y)
     def __init__(self, snack_bowl: SnackBowl, delay: float, rate: float, x: float, y: float, radius: float):
         self.snack_bowl = snack_bowl
         self.delay = delay
@@ -55,8 +57,9 @@ class SnackDispenser:
         self.x = x
         self.y = y
         self.radius = radius
-        rospy.Timer(rospy.Duration(self.check_interval), self.try_dispense) #check often if we are under a snack dispenser
-        
+        # check often if we are under a snack dispenser
+        rospy.Timer(rospy.Duration(self.check_interval), self.try_dispense)
+
     def robot_under(self):
         return (self.x-self.snack_bowl.x)**2 + (self.y-self.snack_bowl.y)**2 <= self.radius**2
 
@@ -74,21 +77,26 @@ class SnackDispenser:
 
     def try_dispense(self, event):
         if not self.dispensing:
-            #try to start
+            # try to start
             if self.robot_under():
-               self.start_dispensing() 
+                self.start_dispensing()
         self.dispense_time_elapsed += self.check_interval
         self.update_dispensing()
         if self.dispensing:
             self.drop_snack(self.rate*self.check_interval)
+
     def drop_snack(self, volume):
-        rospy.Timer(rospy.Duration(self.delay), lambda event: self.snack_bowl.add_snack(volume), oneshot=True)
+        rospy.Timer(rospy.Duration(self.delay),
+                    lambda event: self.snack_bowl.add_snack(volume), oneshot=True)
 
 # Move base using navigation stack
+
+
 class MoveBaseClient(object):
     destination = []
     current_pos = None
     moving = False
+
     def __init__(self, snack_bowl: SnackBowl):
         self.client = actionlib.SimpleActionClient("move_base", MoveBaseAction)
         rospy.loginfo("Waiting for move_base...")
@@ -98,7 +106,7 @@ class MoveBaseClient(object):
         self.client.wait_for_server()
 
     def goto(self, x, y, theta, frame="map"):
-        self.destination = [x,y,theta]
+        self.destination = [x, y, theta]
         move_goal = MoveBaseGoal()
         move_goal.target_pose.pose.position.x = x
         move_goal.target_pose.pose.position.y = y
@@ -111,7 +119,7 @@ class MoveBaseClient(object):
         self.client.send_goal(move_goal)
         self.moving = True
         self.client.wait_for_result()
-    
+
     def under_snack_dispenser(self):
         return False
 
@@ -124,15 +132,16 @@ class MoveBaseClient(object):
         self.odom = msg
         self.snack_bowl.x = msg.pose.pose.position.x
         self.snack_bowl.y = msg.pose.pose.position.y
-        
-    def distanceCalc(self,event):
+
+    def distanceCalc(self, event):
         if self.moving and self.odom != None:
             #rospy.loginfo(f"odom: ({self.odom.pose.pose.position.x},{self.odom.pose.pose.position.y}) x: {abs(self.destination[0] - self.odom.pose.pose.position.x)}, y: {abs(self.destination[1] - self.odom.pose.pose.position.y)}")
-            dist = (self.destination[0] - self.odom.pose.pose.position.x)**2 + (self.destination[1] - self.odom.pose.pose.position.y)**2
-            rospy.loginfo(f"odom: {self.odom.pose.pose.position}, dest: {self.destination}, dist: {dist}")
+            dist = (self.destination[0] - self.odom.pose.pose.position.x)**2 + (
+                self.destination[1] - self.odom.pose.pose.position.y)**2
+            rospy.loginfo(
+                f"odom: {self.odom.pose.pose.position}, dest: {self.destination}, dist: {dist}")
             if dist < 1:
                 self.cancel_goals()
-
 
 
 if __name__ == "__main__":
@@ -149,14 +158,14 @@ if __name__ == "__main__":
     cheez_its = SnackDispenser(snack_bowl, 0.5, 0.5, 3.05, 4, 2)
 
     HOST = "127.0.0.1"  # Standard loopback interface address (localhost)
-    PORT = 65423 #Port to listen on (non-privileged ports are > 1023)
-    
+    PORT = 65423  # Port to listen on (non-privileged ports are > 1023)
+
     move_base = MoveBaseClient(snack_bowl)
-    rospy.Subscriber('odom',Odometry,move_base.get_odom)
+    rospy.Subscriber('amcl_pose', PoseWithCovarianceStamped, move_base.get_odom)
     rospy.Timer(rospy.Duration(0.1), move_base.distanceCalc)
-    
-    #read coordinates from network
-    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+
+    # read coordinates from network
+    """with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
         s.bind((HOST, PORT))
         s.listen()
         print(f"Ready on {HOST}:{PORT}")
@@ -165,7 +174,7 @@ if __name__ == "__main__":
             try:
                 conn, addr = s.accept()
             except:
-                continue #retry on timeout
+                continue  # retry on timeout
             with conn:
                 print(f"Connected by {addr}")
                 data = conn.recv(1024)
@@ -176,10 +185,12 @@ if __name__ == "__main__":
                     x = float(coords.split(',')[0])
                     y = float(coords.split(',')[1])
                     print(f"moving to {x}, {y}")
-                    move_base.goto(x,y,0)
+                    move_base.goto(x, y, 0)
                     print("Done!")
                 except Exception as e:
                     print("Error occurred while trying to move: " + str(e))
+    """
+    move_base.goto(3.05,-4,0)
 """
     # Setup clients
     move_base = MoveBaseClient()
@@ -198,4 +209,3 @@ if __name__ == "__main__":
 
     rospy.loginfo("comp..")
     """
-
