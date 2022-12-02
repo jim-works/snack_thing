@@ -23,7 +23,7 @@
     <include>
       <uri>model://fetchit_table</uri>
       <name>snack</name>
-      <pose>4.05 -3 1 0 0 1.57</pose>
+      <pose>3.05 3 1 0 0 1.57</pose>
     </include>
     <include>
       <uri>model://demo_cube</uri>
