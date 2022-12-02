@@ -4,7 +4,7 @@ from PIL import Image
 import streamlit as st
 
 HOST = "127.0.0.1"  # The server's hostname or IP address
-PORT = 65432  # The port used by the server
+PORT = 65423  # The port used by the server
 
 
 def coor_for_robot(x, y):
@@ -25,8 +25,8 @@ def submit_coordinates(x, y, option):
     else:
         coord = (3.05, 4)
     st.write(coord)
-    #coor_for_robot(coord[0], coord[1])
-    #coor_for_robot(x, y)
+    coor_for_robot(coord[0], coord[1])
+    coor_for_robot(x, y)
     return
 
 
