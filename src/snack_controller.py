@@ -4,6 +4,7 @@ import copy
 import actionlib
 import rospy
 
+import socket
 from math import sin, cos
 from moveit_python import (MoveGroupInterface,
                            PlanningSceneInterface,
@@ -18,6 +19,7 @@ from move_base_msgs.msg import MoveBaseAction, MoveBaseGoal
 from moveit_msgs.msg import PlaceLocation, MoveItErrorCodes
 from trajectory_msgs.msg import JointTrajectory, JointTrajectoryPoint
 from nav_msgs.msg import Odometry
+
 
 class SnackBowl(object):
     def __init__(self):
@@ -114,6 +116,8 @@ class MoveBaseClient(object):
             if(abs(self.destination[0] - self.odom.pose.pose.position.x) < 0.1) or (abs(self.destination[1] - self.odom.pose.pose.position.y) < 0.1):
                 self.cancel_goals()
 
+
+
 if __name__ == "__main__":
     # Create a node
     rospy.init_node("snack_controller")
@@ -125,8 +129,37 @@ if __name__ == "__main__":
     snack_bowl.max_volume = 1
     snacK_dispenser = SnackDispenser(snack_bowl, 0.5, 0.5)
     snacK_dispenser.start_dispensing()
-    while True:
-        rospy.sleep(rospy.Duration(0.1))
+    HOST = "127.0.0.1"  # Standard loopback interface address (localhost)
+    PORT = 65432 #Port to listen on (non-privileged ports are > 1023)
+    
+    move_base = MoveBaseClient()
+    rospy.Subscriber('odom',Odometry,move_base.get_odom)
+    rospy.Timer(rospy.Duration(0.1), move_base.distanceCalc)
+
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+        s.bind((HOST, PORT))
+        s.listen()
+        print(f"Ready on {HOST}:{PORT}")
+        while True:
+            conn, addr = (None, None)
+            try:
+                conn, addr = s.accept()
+            except:
+                continue #retry on timeout
+            with conn:
+                print(f"Connected by {addr}")
+                data = conn.recv(1024)
+                if not data:
+                    break
+                try:
+                    coords = data.decode('utf-8')
+                    x = float(coords.split(',')[0])
+                    y = float(coords.split(',')[1])
+                    print(f"moving to {x}, {y}")
+                    move_base.goto(x,y,0)
+                    print("Done!")
+                except Exception as e:
+                    print("Error occurred while trying to move: " + str(e))
 """
     # Setup clients
     move_base = MoveBaseClient()
